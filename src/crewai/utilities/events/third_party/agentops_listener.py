@@ -4,6 +4,7 @@ from crewai.utilities.events import (
     CrewKickoffCompletedEvent,
     ToolUsageErrorEvent,
     ToolUsageStartedEvent,
+    ToolUsageFinishedEvent,
 )
 from crewai.utilities.events.base_event_listener import BaseEventListener
 from crewai.utilities.events.crew_events import CrewKickoffStartedEvent
@@ -15,6 +16,11 @@ try:
     AGENTOPS_INSTALLED = True
 except ImportError:
     AGENTOPS_INSTALLED = False
+
+from rich.console import Console
+from rich.panel import Panel
+
+console = Console()
 
 
 class AgentOpsListener(BaseEventListener):
@@ -48,12 +54,32 @@ class AgentOpsListener(BaseEventListener):
 
         @crewai_event_bus.on(ToolUsageStartedEvent)
         def on_tool_usage_started(source, event: ToolUsageStartedEvent):
-            self.tool_event = agentops.ToolEvent(name=event.tool_name)
+            # 创建并上报工具调用开始事件，包含输入参数
+            self.tool_event = agentops.ToolEvent(name=event.tool_name, args=event.tool_args)
+            
             if self.session:
                 self.session.record(self.tool_event)
+                console.print(Panel(str(event.tool_args), title=f"【工具调用入参】 {event.tool_name}", expand=False, style="bold blue"))
+
+        @crewai_event_bus.on(ToolUsageFinishedEvent)
+        def on_tool_usage_finished(source, event: ToolUsageFinishedEvent):
+            # 记录工具调用完成信息，包含输出和时间等
+            if self.tool_event:
+                # 更新 tool_event 属性
+                self.tool_event.args = event.tool_args
+                self.tool_event.result = event.output
+                self.tool_event.metadata = {
+                    "from_cache": event.from_cache,
+                    "started_at": event.started_at.isoformat(),
+                    "finished_at": event.finished_at.isoformat(),
+                }
+            if self.session:
+                self.session.record(self.tool_event)
+                console.print(Panel(str(event.output), title=f"【工具调用结果】 {event.tool_name}", expand=False, style="bold green"))
 
         @crewai_event_bus.on(ToolUsageErrorEvent)
         def on_tool_usage_error(source, event: ToolUsageErrorEvent):
+            console.print(Panel(str(event.error), title=f"【工具调用异常】 {event.tool_name}", expand=False, style="bold red"))
             agentops.ErrorEvent(exception=event.error, trigger_event=self.tool_event)
 
         @crewai_event_bus.on(TaskEvaluationEvent)

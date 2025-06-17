@@ -21,6 +21,7 @@ from crewai.utilities.exceptions.context_window_exceeding_exception import (
     LLMContextLengthExceededException,
 )
 from rich.console import Console
+from rich.panel import Panel
 from crewai.cli.config import Settings
 
 console = Console()
@@ -148,10 +149,14 @@ def get_llm_response(
 ) -> str:
     """Call the LLM and return the response, handling any invalid responses."""
     try:
+        # 打印 LLM 请求
+        request_content = messages[-1]["content"] if messages else ''
+        console.print(Panel(request_content, title="【LLM 请求】", expand=False, style="bold magenta"))
         answer = llm.call(
             messages,
             callbacks=callbacks,
         )
+        console.print(Panel(answer, title="【LLM 返回】", expand=False, style="bold cyan"))
     except Exception as e:
         printer.print(
             content=f"Error during LLM call: {e}",

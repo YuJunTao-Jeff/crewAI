@@ -36,6 +36,11 @@ from crewai.utilities.events.agent_events import (
 )
 from crewai.utilities.events.crewai_event_bus import crewai_event_bus
 
+from rich.console import Console
+from rich.panel import Panel
+
+console = Console()
+
 
 class CrewAgentExecutor(CrewAgentExecutorMixin):
     _logger: Logger = Logger()
@@ -262,6 +267,8 @@ class CrewAgentExecutor(CrewAgentExecutorMixin):
     def _append_message(self, text: str, role: str = "assistant") -> None:
         """Append a message to the message list with the given role."""
         self.messages.append(format_message_for_llm(text, role=role))
+        # 在控制台以方框打印响应增量
+        console.print(Panel(text, title="【模型返回增量】", expand=False, style="bold yellow"))
 
     def _show_start_logs(self):
         """Show logs for the start of agent execution."""
