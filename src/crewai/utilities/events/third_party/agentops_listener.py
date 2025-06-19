@@ -19,7 +19,9 @@ except ImportError:
 
 from rich.console import Console
 from rich.panel import Panel
+import os
 
+DEBUG_CREWAI = True
 console = Console()
 
 
@@ -59,7 +61,8 @@ class AgentOpsListener(BaseEventListener):
             
             if self.session:
                 self.session.record(self.tool_event)
-                console.print(Panel(str(event.tool_args), title=f"【工具调用入参】 {event.tool_name}", expand=False, style="bold blue"))
+                if DEBUG_CREWAI:
+                    console.print(Panel(str(event.tool_args), title=f"【工具调用入参】 {event.tool_name}", expand=False, style="bold blue"))
 
         @crewai_event_bus.on(ToolUsageFinishedEvent)
         def on_tool_usage_finished(source, event: ToolUsageFinishedEvent):
@@ -75,11 +78,13 @@ class AgentOpsListener(BaseEventListener):
                 }
             if self.session:
                 self.session.record(self.tool_event)
-                console.print(Panel(str(event.output), title=f"【工具调用结果】 {event.tool_name}", expand=False, style="bold green"))
+                if DEBUG_CREWAI:
+                    console.print(Panel(str(event.output), title=f"【工具调用结果】 {event.tool_name}", expand=False, style="bold green"))
 
         @crewai_event_bus.on(ToolUsageErrorEvent)
         def on_tool_usage_error(source, event: ToolUsageErrorEvent):
-            console.print(Panel(str(event.error), title=f"【工具调用异常】 {event.tool_name}", expand=False, style="bold red"))
+            if DEBUG_CREWAI:
+                console.print(Panel(str(event.error), title=f"【工具调用异常】 {event.tool_name}", expand=False, style="bold red"))
             agentops.ErrorEvent(exception=event.error, trigger_event=self.tool_event)
 
         @crewai_event_bus.on(TaskEvaluationEvent)

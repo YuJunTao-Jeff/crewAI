@@ -22,8 +22,10 @@ from crewai.utilities.exceptions.context_window_exceeding_exception import (
 )
 from rich.console import Console
 from rich.panel import Panel
+import os
 from crewai.cli.config import Settings
 
+DEBUG_CREWAI = True
 console = Console()
 
 def parse_tools(tools: List[BaseTool]) -> List[CrewStructuredTool]:
@@ -151,12 +153,14 @@ def get_llm_response(
     try:
         # 打印 LLM 请求
         request_content = messages[-1]["content"] if messages else ''
-        console.print(Panel(request_content, title="【LLM 请求】", expand=False, style="bold magenta"))
+        if DEBUG_CREWAI:
+            console.print(Panel(request_content, title="【LLM 请求】", expand=False, style="bold magenta"))
         answer = llm.call(
             messages,
             callbacks=callbacks,
         )
-        console.print(Panel(answer, title="【LLM 返回】", expand=False, style="bold cyan"))
+        if DEBUG_CREWAI:
+            console.print(Panel(answer, title="【LLM 返回】", expand=False, style="bold cyan"))
     except Exception as e:
         printer.print(
             content=f"Error during LLM call: {e}",
